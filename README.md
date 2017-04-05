@@ -1,4 +1,4 @@
-# tinyos-project-maker #
+# tinyos-project-generator #
 this simple script can help we make a tinyos project  
 usage:  
 &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;nTinyosPjt <appName\> <number of Timers\> <with printf?>  
