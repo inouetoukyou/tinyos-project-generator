@@ -1,0 +1,167 @@
+#!/bin/bash
+
+if [ $# -eq 0 ] || [ $# -gt 3 ];then
+	echo "need 1 to 3 arguments"
+	exit
+fi
+
+typeset -u arg1
+arg1="$1"
+arg2=0
+arg3=0
+
+if [ $# -eq 3 ] && ( [ $3 = "p" ] || [ $3 = "P" ] );then
+	arg3=1
+fi
+
+if [ $# -gt 1 ];then
+	if [ $2 -gt 5 ];then
+		arg2=5
+	else
+		arg2=$2
+	fi
+fi
+
+mkdir $1 && cd $1
+touch $1AppC.nc && touch $1C.nc && touch $1.h && touch Makefile
+
+
+echo "COMPONENTS=$1AppC" >> Makefile
+
+if [ $arg3 -eq 1 ];then
+	echo "CFLAGS += -I\$(TOSDIR)/lib/printf" >> Makefile
+	echo "CFLAGS += -DPRINTF_BUFFER_SIZE=1024" >> Makefile
+fi
+
+echo >> Makefile
+echo "include \$(MAKERULES)" >> Makefile
+
+
+echo "#ifndef `echo $arg1`_H" >> $1.h
+echo "#define `echo $arg1`_H" >> $1.h
+echo >> $1.h
+echo "enum {" >> $1.h 
+echo "	`echo $arg1`_MSG = 69," >> $1.h
+echo "	TIMER_PERIOD_MILLI = 48," >> $1.h
+echo "	SEND_TIMES = 1000" >> $1.h
+echo "};" >> $1.h
+echo >> $1.h
+echo "typedef nx_struct $1Msg {" >> $1.h
+echo "	nx_uint16_t nodeid;" >> $1.h
+echo "	nx_uint16_t counter;" >> $1.h
+echo "} $1Msg;" >> $1.h
+echo "#endif" >> $1.h
+
+if [ $arg3 -eq 1 ];then
+	echo "#define NEW_PRINTF_SEMANTICS" >> $1AppC.nc
+	echo "#include \"printf.h\"" >> $1AppC.nc
+fi
+
+echo "#include \"$1.h\"" >> $1AppC.nc
+echo "configuration $1AppC {" >> $1AppC.nc
+echo "}" >> $1AppC.nc
+echo "implementation {" >> $1AppC.nc
+echo "	components $1C as App;" >> $1AppC.nc
+echo "	components MainC;" >> $1AppC.nc
+
+if [ $arg3 -eq 1 ];then
+	echo "	components PrintfC;" >> $1AppC.nc
+	echo "	components SerialStartC;" >> $1AppC.nc
+fi
+
+echo "	components LedsC;" >> $1AppC.nc
+echo "	components ActiveMessageC;" >> $1AppC.nc
+echo "	components new AMSenderC($arg1_MSG);" >> $1AppC.nc
+echo "	components new AMReceiverC($arg1_MSG);" >> $1AppC.nc
+
+for (( i=0;i<$arg2;i++ ))
+do
+	echo "	components new TimerMilliC() as Timer$i;" >> $1AppC.nc
+done
+
+echo "	components CC2420ControlC;" >> $1AppC.nc
+echo >> $1AppC.nc
+echo "	App.Boot -> MainC;" >> $1AppC.nc
+echo "	App.Led -> LedsC.Leds;" >> $1AppC.nc
+echo "	App.Receive -> AMReceiverC;" >> $1AppC.nc;
+echo "	App.AMSend -> AMSenderC;" >> $1AppC.nc;
+echo "	App.Packet -> AMSenderC;" >> $1AppC.nc;
+echo "	App.AMPacket -> AMSenderC;" >> $1AppC.nc;
+echo "	App.AMControl -> ActiveMessageC;" >> $1AppC.nc;
+
+for (( i=0; i<$arg2; i++ ))
+do
+	echo "	App.Timer$i -> Timer$i;" >> $1AppC.nc;
+done
+
+echo "}" >> $1AppC.nc
+
+
+if [ $arg3 -eq 1 ];then
+	echo "#include \"printf.h\"" >> $1C.nc
+fi
+
+echo "#include \"Timer.h\"" >> $1C.nc
+echo "#include \"$1.h\"" >> $1C.nc
+echo "module $1C @safe() {" >> $1C.nc
+echo "	uses {" >> $1C.nc
+echo "		interface Boot;" >> $1C.nc
+echo "		interface Leds;" >> $1C.nc
+echo "		interface Receive;" >> $1C.nc
+echo "		interface AMSend;" >> $1C.nc
+echo "		interface Packet;" >> $1C.nc
+echo "		interface AMPacket;" >> $1C.nc
+echo "		interface SplitControl as AMControl;" >> $1C.nc
+echo "		interface CC2420Config;" >> $1C.nc
+
+for (( i=0;i<$arg2;i++))
+do
+	echo "		interface Timer<TMilli> as Timer$i;" >> $1C.nc
+done
+
+echo "	}" >> $1C.nc
+echo "}" >> $1C.nc
+echo "implementation {" >> $1C.nc
+echo "	bool busy = FALSE;" >> $1C.nc
+echo "	message_t msg_0;" >> $1C.nc
+echo "	uint16_t counter = 0;" >> $1C.nc
+echo "	uint8_t channel;" >> $1C.nc;
+echo >> $1C.nc;
+echo "	event void AMControl.startDone(error_t err) {" >> $1C.nc;
+echo "		if (err ==	SUCCESS) {" >> $1C.nc;
+echo "		}" >> $1C.nc;
+echo "		else {" >> $1C.nc;
+echo "			call AMControl.start();" >> $1C.nc;
+echo "		}" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo >> $1C.nc;
+echo "	event void AMControl.stopDone(error_t err) {" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo >> $1C.nc;
+echo "	event void AMSend.sendDone(message_t *msg, error_t error) {" >> $1C.nc;
+echo "		if (&msg_0 == msg) {" >> $1C.nc;
+echo "			busy = FALSE;" >> $1C.nc;
+echo "		}" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo >> $1C.nc;
+echo "	event void Boot.booted() {" >> $1C.nc;
+echo "		call AMControl.start();" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo >> $1C.nc;
+echo "	event message_t * Receive.receive(message_t *msg, void* payload, uint8_t len) {" >> $1C.nc;
+echo "		if (len == sizeof($1Msg)) {" >> $1C.nc;
+echo "		}" >> $1C.nc;
+echo "		return msg;" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo >> $1C.nc;
+
+for ((i=0;i<$arg2;i++))
+do
+	echo "	event void Timer$i.fired() {" >> $1C.nc;
+	echo "	}" >> $1C.nc;
+	echo >> $1C.nc;
+done
+
+echo "	event void CC2420Config.syncDone(error_t error) {" >> $1C.nc;
+echo "	}" >> $1C.nc;
+echo "}" >> $1C.nc;
