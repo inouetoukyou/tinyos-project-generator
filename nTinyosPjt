@@ -26,7 +26,7 @@ mkdir $1 && cd $1
 touch $1AppC.nc && touch $1C.nc && touch $1.h && touch Makefile
 
 
-echo "COMPONENTS=$1AppC" >> Makefile
+echo "COMPONENT=$1AppC" >> Makefile
 
 if [ $arg3 -eq 1 ];then
 	echo "CFLAGS += -I\$(TOSDIR)/lib/printf" >> Makefile
@@ -47,8 +47,10 @@ echo "	SEND_TIMES = 1000" >> $1.h
 echo "};" >> $1.h
 echo >> $1.h
 echo "typedef nx_struct $1Msg {" >> $1.h
-echo "	nx_uint16_t nodeid;" >> $1.h
-echo "	nx_uint16_t counter;" >> $1.h
+echo "	nx_uint16_t node_id;" >> $1.h
+echo "	nx_uint16_t pkt_id;" >> $1.h
+echo "	nx_uint16_t send_id;" >> $1.h
+echo "	nx_uint16_t hop_count;" >> $1.h
 echo "} $1Msg;" >> $1.h
 echo "#endif" >> $1.h
 
@@ -126,6 +128,11 @@ echo "	bool busy = FALSE;" >> $1C.nc
 echo "	message_t msg_0;" >> $1C.nc
 echo "	uint16_t counter = 0;" >> $1C.nc
 echo "	uint8_t channel;" >> $1C.nc;
+echo "	uint16_t hop_count;" >> $1C.nc
+echo "	uint16_t pkt_id = 0;" >> $1C.nc
+echo "	uint16_t node_id;" >> $1C.nc
+echo "	uint16_t send_id;" >> $1C.nc
+echo "	uint16_t myHopCnt;" >> $1C.nc
 echo >> $1C.nc;
 echo "	event void AMControl.startDone(error_t err) {" >> $1C.nc;
 echo "		if (err ==	SUCCESS) {" >> $1C.nc;
