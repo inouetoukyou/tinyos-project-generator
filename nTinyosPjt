@@ -73,8 +73,8 @@ fi
 
 echo "	components LedsC;" >> $1AppC.nc
 echo "	components ActiveMessageC;" >> $1AppC.nc
-echo "	components new AMSenderC($arg1_MSG);" >> $1AppC.nc
-echo "	components new AMReceiverC($arg1_MSG);" >> $1AppC.nc
+echo "	components new AMSenderC(`echo $arg1`_MSG);" >> $1AppC.nc
+echo "	components new AMReceiverC(`echo $arg1`_MSG);" >> $1AppC.nc
 
 for (( i=0;i<$arg2;i++ ))
 do
@@ -84,7 +84,7 @@ done
 echo "	components CC2420ControlC;" >> $1AppC.nc
 echo >> $1AppC.nc
 echo "	App.Boot -> MainC;" >> $1AppC.nc
-echo "	App.Led -> LedsC.Leds;" >> $1AppC.nc
+echo "	App.Leds -> LedsC.Leds;" >> $1AppC.nc
 echo "	App.Receive -> AMReceiverC;" >> $1AppC.nc;
 echo "	App.AMSend -> AMSenderC;" >> $1AppC.nc;
 echo "	App.Packet -> AMSenderC;" >> $1AppC.nc;
